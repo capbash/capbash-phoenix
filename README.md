@@ -25,7 +25,7 @@ capbash install phoenix
 The available configurations include:
 
 ```
-ELIXIR_VEION=${ELIXIR_VERSION-master}
+ELIXIR_VEION=${ELIXIR_VERSION-v0.15.1}
 PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
 PHOENIX_DIR=${PHOENIX_DIR-/var/apps/${PHOENIX_NAME}}
 PHOENIX_REPO=${PHOENIX_REPO-git@github.com:aforward/samplephoenix.git}
