@@ -1,0 +1,8 @@
+#!/bin/bash
+mkdir -p ./nodes
+cp ./submodules/phoenix/files/phoenix_node ./nodes/phoenix
+chmod 755 ./nodes/phoenix
+
+capbash install deploykeys
+capbash install git
+capbash install docker

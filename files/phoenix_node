@@ -1,0 +1,5 @@
+#!/bin/bash
+
+PHOENIX_NAME=samplephoenix \
+  PHOENIX_REPO=git@github.com:aforward/samplephoenix.git \
+  ./submodules/phoenix/install
