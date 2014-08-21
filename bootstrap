@@ -13,3 +13,4 @@ chmod 755 ./nodes/phoenix
 capbash install deploykeys
 capbash install git
 capbash install docker
+capbash install elixir
