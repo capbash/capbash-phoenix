@@ -1,6 +1,13 @@
 #!/bin/bash
 mkdir -p ./nodes
-cp ./submodules/phoenix/files/phoenix_node ./nodes/phoenix
+
+printf "%b" "#!/bin/bash
+
+PHOENIX_NAME=samplephoenix \\
+  PHOENIX_REPO=git@github.com:aforward/samplephoenix.git \\
+  ./submodules/phoenix/install
+" > ./nodes/phoenix
+
 chmod 755 ./nodes/phoenix
 
 capbash install deploykeys
