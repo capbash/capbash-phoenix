@@ -5,6 +5,7 @@ WORKDIR /opt/webapp
 
 ENV MIX_ENV prod
 ENV PORT 80
+ENV PROXY_PORT @PHOENIX_PROXY_PORT@
 
 RUN mix local.hex --force
 RUN mix local.rebar --force
