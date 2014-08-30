@@ -27,7 +27,7 @@ The available configurations include:
 ```
 ELIXIR_VEION=${ELIXIR_VERSION-v0.15.1}
 PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
-PHOENIX_DIR=${PHOENIX_DIR-/var/apps/${PHOENIX_NAME}}
+PHOENIX_DIR=${PHOENIX_DIR-/var/local/apps/${PHOENIX_NAME}}
 PHOENIX_REPO=${PHOENIX_REPO-git@github.com:aforward/samplephoenix.git}
 PHOENIX_HTTP_PORT=${PHOENIX_PORT-80}
 PHOENIX_SSL_PORT=${PHOENIX_PORT-443}
