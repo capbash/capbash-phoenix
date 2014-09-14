@@ -4,6 +4,7 @@ mkdir -p ./nodes
 printf "%b" "#!/bin/bash
 
 PHOENIX_NAME=samplephoenix \\
+  ELIXIR_VERSION=0.15.1 \\
   PHOENIX_REPO=git@github.com:aforward/samplephoenix.git \\
   ./submodules/phoenix/install
 " > ./nodes/phoenix
