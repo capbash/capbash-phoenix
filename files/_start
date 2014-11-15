@@ -1,0 +1,5 @@
+docker run -d -t
+  -p $PHOENIX_HTTP_PORT:80
+  -p $PHOENIX_SSL_PORT:443
+  --name $PHOENIX_NAME
+  $PHOENIX_NAME

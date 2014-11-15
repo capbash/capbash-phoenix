@@ -1,4 +1,5 @@
 #!/bin/bash
+source ./submodules/bootstrap/logging
 
 #-----------
 # Configurations
@@ -8,14 +9,15 @@ ELIXIR_VERSION=${ELIXIR_VERSION-v1.0.0}
 NGINX_SITES_ENABLED_DIR=${NGINX_SITES_ENABLED_DIR-/etc/nginx/sites-enabled}
 NGINX_LOG_DIR=${NGINX_LOG_DIR-/var/log/nginx}
 PHOENIX_PROXY_PORT=${PHOENIX_PROXY_PORT-80}
-PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
-PHOENIX_DIR=${PHOENIX_DIR-/var/local/apps/${PHOENIX_NAME}}
+PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-/var/local/apps/${PHOENIX_NAME}}
 PHOENIX_REPO=${PHOENIX_REPO-git@github.com:aforward/samplephoenix.git}
-PHOENIX_HTTP_PORT=${PHOENIX_HTTP_PORT-80}
-PHOENIX_SSL_PORT=${PHOENIX_SSL_PORT-443}
 PHOENIX_MODE=${PHOENIX_MODE:as_is} # supports as_is, nginx
 PHOENIX_APP_PORT=${PHOENIX_INTERNAL_PORT-$PHOENIX_HTTP_PORT}
 PHOENIX_SERVER_NAMES=${PHOENIX_SERVER_NAMES-_}
+
+export PHOENIX_HTTP_PORT=${PHOENIX_HTTP_PORT-80}
+export PHOENIX_SSL_PORT=${PHOENIX_SSL_PORT-443}
+export PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
 
 #-----------
 # Install Script
@@ -23,13 +25,13 @@ PHOENIX_SERVER_NAMES=${PHOENIX_SERVER_NAMES-_}
 
 ELIXIR_VERSION=$ELIXIR_VERSION ./submodules/elixir/install
 
-mkdir -p $PHOENIX_DIR
-cp ./submodules/phoenix/files/phoenix.dockerfile $PHOENIX_DIR/Dockerfile
-sed -i s/@ELIXIR_VERSION@/$ELIXIR_VERSION/g $PHOENIX_DIR/Dockerfile
-sed -i s/@PHOENIX_PROXY_PORT@/$PHOENIX_PROXY_PORT/g $PHOENIX_DIR/Dockerfile
+mkdir -p $PHOENIX_LAUNCHER_DIR
+cp ./submodules/phoenix/files/phoenix.dockerfile $PHOENIX_LAUNCHER_DIR/Dockerfile
+sed -i s/@ELIXIR_VERSION@/$ELIXIR_VERSION/g $PHOENIX_LAUNCHER_DIR/Dockerfile
+sed -i s/@PHOENIX_PROXY_PORT@/$PHOENIX_PROXY_PORT/g $PHOENIX_LAUNCHER_DIR/Dockerfile
 
 GIT_URL=$PHOENIX_REPO \
-  GIT_APPS_DIR=$PHOENIX_DIR \
+  GIT_APPS_DIR=$PHOENIX_LAUNCHER_DIR \
   GIT_REPO_NAME=webapp \
   ./submodules/git/install
 
@@ -38,34 +40,14 @@ webapp/.git
 webapp/.gitignore
 webapp/test
 webapp/README.md
-" > $PHOENIX_DIR/.dockerignore
+" > $PHOENIX_LAUNCHER_DIR/.dockerignore
 
-(cd $PHOENIX_DIR && docker build -t ${PHOENIX_NAME} .)
+LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=${PHOENIX_NAME} ./submodules/docker/build
 
-NAME=$PHOENIX_NAME DIR=$PHOENIX_DIR ./submodules/docker/helpers
-
-printf "%b" "#!/bin/bash
-docker run -i -t -p 7623:80 -p 7624:443 ${PHOENIX_NAME} /bin/bash
-" > $PHOENIX_DIR/debug
-
-printf "%b" "#!/bin/bash
-docker rm ${PHOENIX_NAME} > /dev/num
-docker run -d -t -p ${PHOENIX_HTTP_PORT}:80 -p ${PHOENIX_SSL_PORT}:443 --name ${PHOENIX_NAME} ${PHOENIX_NAME}
-IP=\$(/var/local/apps/${PHOENIX_NAME}/ip)
-
-if [[ \"\$IP\" == '' ]]; then
-  echo 'No IP address assigned when starting MYSQL, not sure what went wrong.'
-  exit 1
-fi
-
-if [[ \"\`cat /etc/hosts | grep ${PHOENIX_NAME}.local\`\" == '' ]]; then
-  echo \"Adding ${PHOENIX_NAME}.local (\$IP) to /etc/hosts\"
-  echo \"\$IP ${PHOENIX_NAME}.local\" >> /etc/hosts
-else
-  echo \"Updating ${PHOENIX_NAME}.local (\$IP) in /etc/hosts\"
-  sed -i \"s|.*${PHOENIX_NAME}.local|\$IP ${PHOENIX_NAME}.local|g\" /etc/hosts
-fi
-" > $PHOENIX_DIR/start
+NAME=$PHOENIX_NAME DIR=$PHOENIX_LAUNCHER_DIR \
+  START=./submodules/phoenix/files/_start \
+  DEBUG=./submodules/phoenix/files/_debug \
+  ./submodules/docker/helpers
 
 if [[ "$PHOENIX_MODE" == "nginx" ]]; then
   cp ./submodules/phoenix/files/nginx.conf $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
@@ -73,23 +55,23 @@ if [[ "$PHOENIX_MODE" == "nginx" ]]; then
   sed -i "s|@PHOENIX_APP_PORT@|$PHOENIX_APP_PORT|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
   sed -i "s|@PHOENIX_SERVER_NAMES@|$PHOENIX_SERVER_NAMES|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
   sed -i "s|@SERVER_LOGS@|$NGINX_LOG_DIR|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-  echo "$PHOENIX_DIR/sync_ip" >> $PHOENIX_DIR/start
-  echo "$PHOENIX_DIR/sync_ip" >> $PHOENIX_DIR/stop
-  echo "$PHOENIX_DIR/sync_ip" >> $PHOENIX_DIR/idempot
+  echo "$PHOENIX_LAUNCHER_DIR/sync_ip" >> $PHOENIX_LAUNCHER_DIR/start
+  echo "$PHOENIX_LAUNCHER_DIR/sync_ip" >> $PHOENIX_LAUNCHER_DIR/stop
+  echo "$PHOENIX_LAUNCHER_DIR/sync_ip" >> $PHOENIX_LAUNCHER_DIR/idempot
 fi
 
   printf "%b" "#!/bin/bash
 IP=\$(/var/local/apps/${PHOENIX_NAME}/ip)
 if [[ \"\$IP\" == '' ]]; then
-  echo \"Resetting $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP 127.0.0.1\"
+  debug \"Resetting $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP 127.0.0.1\"
   sed -i \"s|[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*|127.0.0.1|g\" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
 else
-  echo \"Updating $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP \$IP\"
+  debug \"Updating $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP \$IP\"
   sed -i \"s|[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*|\$IP|g\" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
 fi
 touch /var/local/apps/nginx_reload
-" > $PHOENIX_DIR/sync_ip
+" > $PHOENIX_LAUNCHER_DIR/sync_ip
 
-chmod 755 $PHOENIX_DIR/start
-chmod 755 $PHOENIX_DIR/debug
-chmod 755 $PHOENIX_DIR/sync_ip
+chmod 755 $PHOENIX_LAUNCHER_DIR/start
+chmod 755 $PHOENIX_LAUNCHER_DIR/debug
+chmod 755 $PHOENIX_LAUNCHER_DIR/sync_ip
