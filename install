@@ -42,10 +42,7 @@ webapp/README.md
 
 (cd $PHOENIX_DIR && docker build -t ${PHOENIX_NAME} .)
 
-
-NAME=$PHOENIX_NAME DIR=$PHOENIX_DIR ./submodules/docker/ip
-NAME=$PHOENIX_NAME DIR=$PHOENIX_DIR ./submodules/docker/idempot
-NAME=$PHOENIX_NAME DIR=$PHOENIX_DIR ./submodules/docker/stop
+NAME=$PHOENIX_NAME DIR=$PHOENIX_DIR ./submodules/docker/helpers
 
 printf "%b" "#!/bin/bash
 docker run -i -t -p 7623:80 -p 7624:443 ${PHOENIX_NAME} /bin/bash
@@ -92,8 +89,6 @@ else
 fi
 touch /var/local/apps/nginx_reload
 " > $PHOENIX_DIR/sync_ip
-
-
 
 chmod 755 $PHOENIX_DIR/start
 chmod 755 $PHOENIX_DIR/debug
