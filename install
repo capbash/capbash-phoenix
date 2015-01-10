@@ -61,6 +61,7 @@ if [[ "$PHOENIX_MODE" == "nginx" ]]; then
 fi
 
   printf "%b" "#!/bin/bash
+source /usr/local/bin/logging
 IP=\$(/var/local/apps/${PHOENIX_NAME}/ip)
 if [[ \"\$IP\" == '' ]]; then
   debug \"Resetting $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP 127.0.0.1\"
