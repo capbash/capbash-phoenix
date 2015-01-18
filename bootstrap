@@ -6,7 +6,7 @@ printf "%b" "#!/bin/bash
 PHOENIX_NAME=samplephoenix \\
   ELIXIR_VERSION=0.15.1 \\
   PHOENIX_REPO=git@github.com:aforward/samplephoenix.git \\
-  ./submodules/phoenix/install
+  ./bits/phoenix/install
 " > ./nodes/phoenix
 
 chmod 755 ./nodes/phoenix

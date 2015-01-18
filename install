@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./submodules/bootstrap/logging
+source ./bits/bootstrap/logging
 
 #-----------
 # Configurations
@@ -25,10 +25,10 @@ export PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
 # Install Script
 #-----------
 
-ELIXIR_VERSION=$ELIXIR_VERSION ./submodules/elixir/install
+ELIXIR_VERSION=$ELIXIR_VERSION ./bits/elixir/install
 
 mkdir -p $PHOENIX_LAUNCHER_DIR
-cp ./submodules/phoenix/files/phoenix.dockerfile $PHOENIX_LAUNCHER_DIR/Dockerfile
+cp ./bits/phoenix/files/phoenix.dockerfile $PHOENIX_LAUNCHER_DIR/Dockerfile
 sed -i s/@ELIXIR_VERSION@/$ELIXIR_VERSION/g $PHOENIX_LAUNCHER_DIR/Dockerfile
 sed -i s/@PHOENIX_PROXY_PORT@/$PHOENIX_PROXY_PORT/g $PHOENIX_LAUNCHER_DIR/Dockerfile
 
@@ -36,7 +36,7 @@ GIT_URL=$PHOENIX_REPO \
   GIT_APPS_DIR=$PHOENIX_LAUNCHER_DIR \
   GIT_REPO_NAME=webapp \
   GIT_BRANCH=$PHOENIX_BRANCH GIT_TAG=$PHOENIX_TAG \
-  ./submodules/git/install
+  ./bits/git/install
 
 printf "%b" "
 webapp/.git
@@ -45,15 +45,15 @@ webapp/test
 webapp/README.md
 " > $PHOENIX_LAUNCHER_DIR/.dockerignore
 
-LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=${PHOENIX_NAME} ./submodules/docker/build
+LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=${PHOENIX_NAME} ./bits/docker/build
 
 NAME=$PHOENIX_NAME DIR=$PHOENIX_LAUNCHER_DIR \
-  START=./submodules/phoenix/files/_start \
-  DEBUG=./submodules/phoenix/files/_debug \
-  ./submodules/docker/helpers
+  START=./bits/phoenix/files/_start \
+  DEBUG=./bits/phoenix/files/_debug \
+  ./bits/docker/helpers
 
 if [[ "$PHOENIX_MODE" == "nginx" ]]; then
-  cp ./submodules/phoenix/files/nginx.conf $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
+  cp ./bits/phoenix/files/nginx.conf $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
   sed -i "s|@PHOENIX_NAME@|$PHOENIX_NAME|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
   sed -i "s|@PHOENIX_APP_PORT@|$PHOENIX_APP_PORT|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
   sed -i "s|@PHOENIX_SERVER_NAMES@|$PHOENIX_SERVER_NAMES|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
