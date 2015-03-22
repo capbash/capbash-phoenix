@@ -7,7 +7,7 @@ source ./bits/bootstrap/logging
 
 ELIXIR_VERSION=${ELIXIR_VERSION-v1.0.0}
 NGINX_SITES_ENABLED_DIR=${NGINX_SITES_ENABLED_DIR-/etc/nginx/sites-enabled}
-NGINX_LOG_DIR=${NGINX_LOG_DIR-/var/log/nginx}
+
 PHOENIX_PROXY_PORT=${PHOENIX_PROXY_PORT-80}
 PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-/var/local/apps/${PHOENIX_NAME}}
 PHOENIX_REPO=${PHOENIX_REPO-git@github.com:aforward/samplephoenix.git}
@@ -20,6 +20,9 @@ PHOENIX_TAG=${GIT_TAG-$PHOENIX_BRANCH}
 export PHOENIX_HTTP_PORT=${PHOENIX_HTTP_PORT-80}
 export PHOENIX_SSL_PORT=${PHOENIX_SSL_PORT-443}
 export PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
+
+export LOG_DIR=${LOG_DIR-/var/log}
+export NGINX_LOG_DIR=${GIT_LOG_DIR-$LOG_DIR/nginx}
 
 #-----------
 # Install Script
