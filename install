@@ -5,11 +5,14 @@ source ./bits/bootstrap/logging
 # Configurations
 #-----------
 
-ELIXIR_VERSION=${ELIXIR_VERSION-v1.0.0}
-NGINX_SITES_ENABLED_DIR=${NGINX_SITES_ENABLED_DIR-/etc/nginx/sites-enabled}
+LAUNCHER_OWNER=${LAUNCHER_OWNER-$USER}
 
-PHOENIX_PROXY_PORT=${PHOENIX_PROXY_PORT-80}
-PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-/var/local/apps/${PHOENIX_NAME}}
+ELIXIR_VERSION=${ELIXIR_VERSION-v1.0.0}
+PHOENIX_VERSION=${PHOENIX_VERSION-v0.10.0}
+
+export LAUNCHER_DIR=${LAUNCHER_DIR-/var/local}
+export PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-$LAUNCHER_DIR/apps/${PHOENIX_NAME}}
+export PHOENIX_PROXY_PORT=${PHOENIX_PROXY_PORT-80}
 PHOENIX_REPO=${PHOENIX_REPO-git@github.com:aforward/samplephoenix.git}
 PHOENIX_MODE=${PHOENIX_MODE-as_is} # supports as_is, nginx
 PHOENIX_APP_PORT=${PHOENIX_INTERNAL_PORT-$PHOENIX_HTTP_PORT}
@@ -18,23 +21,29 @@ PHOENIX_BRANCH=${PHOENIX_BRANCH-master}
 PHOENIX_TAG=${GIT_TAG-$PHOENIX_BRANCH}
 PHOENIX_START=${PHOENIX_START-phoenix.server} # old apps use phoenix.start
 
+PHOENIX_INCLUDE_POSTGRES=${PHOENIX_INCLUDE_POSTGRES-true}
+
 export PHOENIX_HTTP_PORT=${PHOENIX_HTTP_PORT-80}
 export PHOENIX_SSL_PORT=${PHOENIX_SSL_PORT-443}
 export PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
 
 export LOG_DIR=${LOG_DIR-/var/log}
 export NGINX_LOG_DIR=${GIT_LOG_DIR-$LOG_DIR/nginx}
+export NGINX_SITES_ENABLED_DIR=${NGINX_SITES_ENABLED_DIR-/etc/nginx/sites-enabled}
+export NGINX_LAUNCHER_DIR=${NGINX_LAUNCHER_DIR-$LAUNCHER_DIR/nginx}
 
 #-----------
 # Install Script
 #-----------
 
+notify "Installing phoenix app $PHOENIX_NAME..."
+
 ELIXIR_VERSION=$ELIXIR_VERSION ./bits/elixir/install
 
-mkdir -p $PHOENIX_LAUNCHER_DIR
+OWNER=$LAUNCHER_OWNER ./bits/bootstrap/mkdir PHOENIX_LAUNCHER_DIR
 
-
-TEMPLATE=./bits/phoenix/files/phoenix.dockerfile \
+OWNER=$LAUNCHER_OWNER \
+  TEMPLATE=./bits/phoenix/files/phoenix.dockerfile \
   LOCATION=$PHOENIX_LAUNCHER_DIR/Dockerfile \
   ./bits/docker/copyif \
   @PHOENIX_START@ $PHOENIX_START \
@@ -47,44 +56,31 @@ GIT_URL=$PHOENIX_REPO \
   GIT_BRANCH=$PHOENIX_BRANCH GIT_TAG=$PHOENIX_TAG \
   ./bits/git/install
 
-printf "%b" "
-webapp/.git
-webapp/.gitignore
-webapp/test
-webapp/README.md
-" > $PHOENIX_LAUNCHER_DIR/.dockerignore
+TEMPLATE=./bits/phoenix/files/.dockerignore \
+  LOCATION=$PHOENIX_LAUNCHER_DIR/.dockerignore \
+  ./bits/docker/copyif
 
-LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=${PHOENIX_NAME} ./bits/docker/build
+if [[ "$PHOENIX_INCLUDE_POSTGRES" == true ]]; then
+  debug "  -- enabling postgres"
+  sed -i 's|# @POSTGRES_INSTALL@|cat ./bits/phoenix/files/postgres_partial.dockerfile|e' $PHOENIX_LAUNCHER_DIR/Dockerfile
+  export POSTGRES_LINK_CMD="--link postgres:db"
+else
+  export POSTGRES_LINK_CMD=""
+fi
 
-NAME=$PHOENIX_NAME DIR=$PHOENIX_LAUNCHER_DIR \
-  START=./bits/phoenix/files/_start \
-  DEBUG=./bits/phoenix/files/_debug \
-  ./bits/docker/helpers
+LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=${PHOENIX_NAME} VERSION=$PHOENIX_TAG ./bits/docker/build
+NAME=$PHOENIX_NAME VERSION=$PHOENIX_TAG DIR=$PHOENIX_LAUNCHER_DIR BIT=phoenix ./bits/docker/helpers
 
 if [[ "$PHOENIX_MODE" == "nginx" ]]; then
-  cp ./bits/phoenix/files/nginx.conf $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-  sed -i "s|@PHOENIX_NAME@|$PHOENIX_NAME|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-  sed -i "s|@PHOENIX_APP_PORT@|$PHOENIX_APP_PORT|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-  sed -i "s|@PHOENIX_SERVER_NAMES@|$PHOENIX_SERVER_NAMES|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-  sed -i "s|@SERVER_LOGS@|$NGINX_LOG_DIR|g" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-  echo "$PHOENIX_LAUNCHER_DIR/sync_ip" >> $PHOENIX_LAUNCHER_DIR/start
-  echo "$PHOENIX_LAUNCHER_DIR/sync_ip" >> $PHOENIX_LAUNCHER_DIR/stop
-  echo "$PHOENIX_LAUNCHER_DIR/sync_ip" >> $PHOENIX_LAUNCHER_DIR/idempot
+  NAME=$PHOENIX_NAME LAUNCHER_OWNER=$LAUNCHER_OWNER ./bits/nginx/helpers
+  OWNER=$LAUNCHER_OWNER \
+    TEMPLATE=./bits/phoenix/files/nginx.conf \
+    LOCATION=$NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME \
+    ./bits/docker/copyif \
+    @PHOENIX_NAME@ $PHOENIX_NAME \
+    @PHOENIX_APP_PORT@ $PHOENIX_APP_PORT \
+    @PHOENIX_SERVER_NAMES@ $PHOENIX_SERVER_NAMES \
+    @SERVER_LOGS@ $SERVER_LOGS
 fi
 
-  printf "%b" "#!/bin/bash
-source /usr/local/bin/logging
-IP=\$(/var/local/apps/${PHOENIX_NAME}/ip)
-if [[ \"\$IP\" == '' ]]; then
-  debug \"Resetting $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP 127.0.0.1\"
-  sed -i \"s|[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*|127.0.0.1|g\" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-else
-  debug \"Updating $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME IP \$IP\"
-  sed -i \"s|[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*|\$IP|g\" $NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME
-fi
-touch /var/local/apps/nginx_reload
-" > $PHOENIX_LAUNCHER_DIR/sync_ip
-
-chmod 755 $PHOENIX_LAUNCHER_DIR/start
-chmod 755 $PHOENIX_LAUNCHER_DIR/debug
-chmod 755 $PHOENIX_LAUNCHER_DIR/sync_ip
+notify "DONE, Installing phoenix app $PHOENIX_NAME."

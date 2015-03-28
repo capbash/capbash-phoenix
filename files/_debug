@@ -1,3 +1,4 @@
 docker run -i -t
   -p 7623:80
   -p 7624:443
+  $POSTGRES_LINK_CMD

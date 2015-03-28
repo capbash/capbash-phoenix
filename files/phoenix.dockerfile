@@ -1,4 +1,6 @@
-FROM elixir_@ELIXIR_VERSION@
+FROM elixir:@ELIXIR_VERSION@
+
+# @POSTGRES_INSTALL@
 
 ADD webapp /opt/webapp
 WORKDIR /opt/webapp
