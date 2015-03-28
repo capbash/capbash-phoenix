@@ -1,0 +1,2 @@
+#!/bin/bash
+elixir -pa _build/prod/consolidated -S mix @PHOENIX_SERVER@
