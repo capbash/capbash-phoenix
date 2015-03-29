@@ -21,4 +21,4 @@ RUN mix local.hex --force && \
   mix compile.protocols && \
   elixir -pa _build/prod/consolidated -S mix phoenix.routes
 
-CMD phoenix_server
+CMD phoenixserver
