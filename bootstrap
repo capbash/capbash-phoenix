@@ -5,7 +5,7 @@ printf "%b" "#!/bin/bash
 
 PHOENIX_NAME=samplephoenix \\
   ELIXIR_VERSION=0.15.1 \\
-  PHOENIX_REPO=git@github.com:aforward/samplephoenix.git \\
+  PHOENIX_REPO=git@github.com:capbash/samplephoenix.git \\
   ./bits/phoenix/install
 " > ./nodes/phoenix
 

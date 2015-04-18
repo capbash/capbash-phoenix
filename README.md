@@ -6,10 +6,10 @@ Scripts for installing [phoenix](https://github.com/phoenixframework/phoenix), s
 # How to Install #
 
 Install capbash first, more details at:
-https://github.com/aforward/capbash
+https://github.com/capbash/capbash
 
 ```
-curl -s https://raw.githubusercontent.com/aforward/capbash/master/capbash-installer | bash
+curl -s https://raw.githubusercontent.com/capbash/capbash/master/capbash-installer | bash
 capbash new YOUR_REPO_ROOT
 cd YOUR_REPO_ROOT
 ```
@@ -28,7 +28,7 @@ The available configurations include:
 ELIXIR_VEION=${ELIXIR_VERSION-v1.0.0-rc2}
 PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
 PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-/var/local/apps/${PHOENIX_NAME}}
-PHOENIX_REPO=${PHOENIX_REPO-git@github.com:aforward/samplephoenix.git}
+PHOENIX_REPO=${PHOENIX_REPO-git@github.com:capbash/samplephoenix.git}
 PHOENIX_HTTP_PORT=${PHOENIX_PORT-80}
 PHOENIX_SSL_PORT=${PHOENIX_PORT-443}
 ```
