@@ -58,7 +58,7 @@ OWNER=$LAUNCHER_OWNER LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR BIT=phoenix ./bits/dock
 LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=phoenix VERSION=${PHOENIX_VERSION} ./bits/docker/build
 NAME=phoenix DIR=$PHOENIX_LAUNCHER_DIR BIT=phoenix VERSION=${PHOENIX_VERSION} ./bits/docker/helpers
 
-DIR=$PHOENIX_LAUNCHER_DIR ./bits/bootstrap/cleanup
+DIR=./bits/phoenix ./bits/bootstrap/cleanup
 
 if [[ "$PHOENIX_DISPLAY" == "standalone" ]]; then
   notify "DONE, Install Phoenix."
