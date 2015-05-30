@@ -11,8 +11,8 @@ RUN \
 # Install postgres
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 ENV LANG en_US.utf8
-ENV PG_MAJOR 9.4
-ENV PG_VERSION 9.4.1-1.pgdg70+1
+ENV PG_MAJOR @POSTGRES_MAJOR@
+ENV PG_VERSION @POSTGRES_VERSION@
 
 RUN \
   groupadd -r postgres && useradd -r -g postgres postgres && \
