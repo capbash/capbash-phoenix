@@ -1,4 +1,5 @@
-docker run -i -t
-  -p 7623:80
-  -p 7624:443
-  $POSTGRES_LINK_CMD
+docker run -it
+  -p 4000:4000
+  --link postgres:psql
+  --link redis:kv
+  -v ${SRC_DIR}:/src

@@ -1,7 +1,7 @@
 capbash-phoenix
 ==============
 
-Scripts for installing [phoenix](https://github.com/phoenixframework/phoenix), should be used in conjunction with capbash
+Scripts for installing [phoenix](http://www.phoenixframework.org) development environment, should be used in conjunction with capbash
 
 # How to Install #
 

@@ -5,89 +5,54 @@ source ./bits/bootstrap/logging
 # Configurations
 #-----------
 
+ELIXIR_VERSION=${ELIXIR_VERSION-v1.0.4}
+PHOENIX_VERSION=${PHOENIX_VERSION-v0.13.0}
+PHOENIX_INTERNAL_VERSION=$(echo $PHOENIX_VERSION | cut -d'v' -f 2)
+PHOENIX_DISPLAY=${PHOENIX_DISPLAY-standalone} # or internal
+
+LOG_DIR=${LOG_DIR-/var/log}
+SRC_DIR=${SRC_DIR-/var/src}
+export PHOENIX_LOG_DIR=${PHOENIX_LOG_DIR-$LOG_DIR/phoenix}
+export PHOENIX_SRC_DIR=${PHOENIX_SRC_DIR-$SRC_DIR/phoenix}
+
 LAUNCHER_OWNER=${LAUNCHER_OWNER-$USER}
-
-ELIXIR_VERSION=${ELIXIR_VERSION-v1.0.0}
-PHOENIX_VERSION=${PHOENIX_VERSION-v0.10.0}
-
 export LAUNCHER_DIR=${LAUNCHER_DIR-/var/local}
-export PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-$LAUNCHER_DIR/apps/${PHOENIX_NAME}}
-export PHOENIX_PROXY_PORT=${PHOENIX_PROXY_PORT-80}
-PHOENIX_REPO=${PHOENIX_REPO-git@github.com:capbash/samplephoenix.git}
-PHOENIX_MODE=${PHOENIX_MODE-as_is} # supports as_is, nginx
-PHOENIX_APP_PORT=${PHOENIX_INTERNAL_PORT-$PHOENIX_HTTP_PORT}
-PHOENIX_SERVER_NAMES=${PHOENIX_SERVER_NAMES-_}
-PHOENIX_BRANCH=${PHOENIX_BRANCH-master}
-PHOENIX_TAG=${PHOENIX_TAG-$PHOENIX_BRANCH}
-PHOENIX_SERVER=${PHOENIX_SERVER-phoenix.server} # old apps use phoenix.start
-
-PHOENIX_INCLUDE_POSTGRES=${PHOENIX_INCLUDE_POSTGRES-true}
-
-export PHOENIX_HTTP_PORT=${PHOENIX_HTTP_PORT-80}
-export PHOENIX_SSL_PORT=${PHOENIX_SSL_PORT-443}
-export PHOENIX_NAME=${PHOENIX_NAME-samplephoenix}
-
-export LOG_DIR=${LOG_DIR-/var/log}
-export NGINX_LOG_DIR=${GIT_LOG_DIR-$LOG_DIR/nginx}
-export NGINX_SITES_ENABLED_DIR=${NGINX_SITES_ENABLED_DIR-/etc/nginx/sites-enabled}
-export NGINX_LAUNCHER_DIR=${NGINX_LAUNCHER_DIR-$LAUNCHER_DIR/nginx}
+export PHOENIX_LAUNCHER_DIR=${PHOENIX_LAUNCHER_DIR-$LAUNCHER_DIR/phoenix/$PHOENIX_VERSION}
 
 #-----------
 # Install Script
 #-----------
 
-notify "Installing phoenix app $PHOENIX_NAME..."
-
-ELIXIR_VERSION=$ELIXIR_VERSION ./bits/elixir/install
-
-OWNER=$LAUNCHER_OWNER ./bits/bootstrap/mkdir PHOENIX_LAUNCHER_DIR $PHOENIX_LAUNCHER_DIR/bin
-
-OWNER=$LAUNCHER_OWNER \
-  TEMPLATE=./bits/phoenix/files/bin \
-  LOCATION=$PHOENIX_LAUNCHER_DIR/bin \
-  ./bits/docker/copyallif \
-  @PHOENIX_SERVER@ $PHOENIX_SERVER
-
-OWNER=$LAUNCHER_OWNER \
-  TEMPLATE=./bits/phoenix/files/phoenix.dockerfile \
-  LOCATION=$PHOENIX_LAUNCHER_DIR/Dockerfile \
-  ./bits/docker/copyif \
-  @PHOENIX_SERVER@ $PHOENIX_SERVER \
-  @ELIXIR_VERSION@ $ELIXIR_VERSION \
-  @PHOENIX_PROXY_PORT@ $PHOENIX_PROXY_PORT
-
-GIT_URL=$PHOENIX_REPO \
-  GIT_OWNER=$LAUNCHER_OWNER \
-  GIT_APPS_DIR=$PHOENIX_LAUNCHER_DIR \
-  GIT_REPO_NAME=webapp \
-  GIT_BRANCH=$PHOENIX_BRANCH GIT_TAG=$PHOENIX_TAG \
-  ./bits/git/install
-
-TEMPLATE=./bits/phoenix/files/.dockerignore \
-  LOCATION=$PHOENIX_LAUNCHER_DIR/.dockerignore \
-  ./bits/docker/copyif
-
-if [[ "$PHOENIX_INCLUDE_POSTGRES" == true ]]; then
-  debug "  -- enabling postgres"
-  sed -i 's|# @POSTGRES_INSTALL@|cat ./bits/phoenix/files/postgres_partial.dockerfile|e' $PHOENIX_LAUNCHER_DIR/Dockerfile
-  export POSTGRES_LINK_CMD="--link postgres:db"
+if [[ "$PHOENIX_DISPLAY" == "standalone" ]]; then
+  notify "Install Phoenix (p $PHOENIX_VERSION / e $ELIXIR_VERSION) ..."
 else
-  export POSTGRES_LINK_CMD=""
+  notify "  -- Install Phoenix (p $PHOENIX_VERSION / e $ELIXIR_VERSION) ..."
 fi
 
-LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=${PHOENIX_NAME} VERSION=$PHOENIX_TAG ./bits/docker/build
-NAME=$PHOENIX_NAME VERSION=$PHOENIX_TAG DIR=$PHOENIX_LAUNCHER_DIR BIT=phoenix ./bits/docker/helpers
+OWNER=$LAUNCHER_OWNER ./bits/bootstrap/mkdir \
+  LAUNCHER_DIR \
+  PHOENIX_LAUNCHER_DIR \
+  $PHOENIX_LAUNCHER_DIR/src \
+  $PHOENIX_LAUNCHER_DIR/bin
 
-if [[ "$PHOENIX_MODE" == "nginx" ]]; then
-  NAME=$PHOENIX_NAME LAUNCHER_OWNER=$LAUNCHER_OWNER ./bits/nginx/helpers
-  OWNER=$LAUNCHER_OWNER \
-    TEMPLATE=./bits/phoenix/files/nginx.conf \
-    LOCATION=$NGINX_SITES_ENABLED_DIR/$PHOENIX_NAME \
-    ./bits/docker/copyif \
-    @PHOENIX_NAME@ $PHOENIX_NAME \
-    @PHOENIX_APP_PORT@ $PHOENIX_APP_PORT \
-    @PHOENIX_SERVER_NAMES@ $PHOENIX_SERVER_NAMES \
-    @SERVER_LOGS@ $SERVER_LOGS
+OWNER=$LAUNCHER_OWNER TEMPLATE=./bits/phoenix/files/bin LOCATION=$PHOENIX_LAUNCHER_DIR/bin \
+  ./bits/docker/copyallif
+
+SRC_NAME=phoenix_new-$PHOENIX_INTERNAL_VERSION.ez SRC_DIR=${PHOENIX_LAUNCHER_DIR}/src \
+  NAME="Phoenix ${PHOENIX_VERSION}" \
+  REMOTE_URL=https://github.com/phoenixframework/phoenix/releases/download/$PHOENIX_VERSION \
+  ./bits/bootstrap/wget
+
+OWNER=$LAUNCHER_OWNER LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR BIT=phoenix ./bits/docker/copydockerfile \
+  @ELIXIR_VERSION@ $ELIXIR_VERSION \
+  @PHOENIX_VERSION@ $PHOENIX_VERSION \
+  @PHOENIX_INTERNAL_VERSION@ $PHOENIX_INTERNAL_VERSION
+
+LAUNCHER_DIR=$PHOENIX_LAUNCHER_DIR NAME=phoenix VERSION=${PHOENIX_VERSION} ./bits/docker/build
+NAME=phoenix DIR=$PHOENIX_LAUNCHER_DIR BIT=phoenix VERSION=${PHOENIX_VERSION} ./bits/docker/helpers
+
+if [[ "$PHOENIX_DISPLAY" == "standalone" ]]; then
+  notify "DONE, Install Phoenix."
+else
+  notify "  -- DONE, Install Phoenix."
 fi
-
-notify "DONE, Installing phoenix app $PHOENIX_NAME."
