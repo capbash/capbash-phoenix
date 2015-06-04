@@ -1,12 +1,13 @@
 FROM elixir:@ELIXIR_VERSION@
 
-# Install Node.js, and inotify
+# Install Node.js, Ruby and inotify
 RUN \
   apt-get update && \
   apt-get -yf install && \
   apt-get install -y curl inotify-tools && \
   curl -sL https://deb.nodesource.com/setup | sudo bash - && \
-  apt-get install -y nodejs build-essential
+  apt-get install -y nodejs build-essential ruby1.9.3 && \
+  gem install sass
 
 # Install postgres
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
